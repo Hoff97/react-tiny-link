@@ -37,6 +37,8 @@ module.exports = {
       filename: '[file].map', // Remove this line if you prefer inline source maps
       moduleFilenameTemplate: path.relative('../lib', '[resourcePath]'), // Point sourcemap entries to the original file locations on disk
     }),
-    new BundleAnalyzerPlugin(),
+    new BundleAnalyzerPlugin({
+      analyzerMode: 'disabled'
+    }),
   ],
 }
