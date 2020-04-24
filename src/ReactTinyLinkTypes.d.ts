@@ -31,6 +31,7 @@ export interface IReactTinyLinkProps {
         type: ReactTinyLinkType;
     }>;
     defaultMedia?: string;
+    maxCacheAge: number;
 }
 export interface IReactTinyLinkData {
     description: string;

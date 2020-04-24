@@ -12,10 +12,21 @@ const useEffectAsync = (effect: () => void, input) => {
   }, input)
 }
 
+interface CacheEntry {
+  timestamp: Date;
+  data: IReactTinyLinkData;
+}
+
+type Cache = {[url: string]: CacheEntry};
+
+const cache: Cache = {
+};
+
 const fetchUrl = (
   url: string,
   proxyUrl: string,
   defaultMedia: string,
+  maxCacheAge: number,
   setData: (data: IReactTinyLinkData) => void,
   setLoading: (loading: boolean) => void,
   onError: (error: Error) => void,
@@ -23,17 +34,37 @@ const fetchUrl = (
 ) => {
   setLoading(true)
 
+  if (cache[url] !== undefined) {
+    const entry = cache[url];
+    if ((new Date().getTime() - cache[url].timestamp.getTime()) < maxCacheAge) {
+      const data = entry.data;
+      setData(data)
+      onSuccess(data);
+      setLoading(false);
+      console.log('Using cache')
+      return;
+    } else {
+      delete cache[url];
+    }
+  }
+
   const client = fetch(proxyUrl ? `${proxyUrl}/${url}` : url, {
     headers: {
       'x-requested-with': '',
     },
   })
 
+  console.log('Not using cache')
+
   ScraperWraper(url, client, defaultMedia ? [defaultMedia] : [])
     .then((data: IReactTinyLinkData) => {
       setData(data)
       onSuccess(data)
       setLoading(false)
+      cache[url] = {
+        timestamp: new Date(),
+        data
+      }
     })
     .catch((err: any) => {
       onError(err)
@@ -62,6 +93,7 @@ export const ReactTinyLink: React.FC<IReactTinyLinkProps> = ({
   autoPlay = false,
   defaultMedia = '',
   loadSecureUrl = false,
+  maxCacheAge = 0,
   onError = () => { },
   onSuccess = () => { },
 }: IReactTinyLinkProps) => {
@@ -75,7 +107,7 @@ export const ReactTinyLink: React.FC<IReactTinyLinkProps> = ({
   })
   const [loading, setLoading] = React.useState(false)
   useEffectAsync(() => {
-    fetchUrl(url, proxyUrl, defaultMedia, setData, setLoading, onError, onSuccess)
+    fetchUrl(url, proxyUrl, defaultMedia, maxCacheAge, setData, setLoading, onError, onSuccess)
   }, [url, proxyUrl, defaultMedia])
 
   return (
